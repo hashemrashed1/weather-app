@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SkyCast — Premium Weather Forecasts</title>
+  <meta name="description" content="Professional real-time weather forecasts. Current conditions, hourly & 5-day forecast, air quality and more." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body class="theme-default">
+
+  <!-- Particle Canvas -->
+  <canvas id="particle-canvas" aria-hidden="true"></canvas>
+
+  <!-- Animated Background -->
+  <div class="bg-scene" aria-hidden="true">
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+    <div class="orb orb-4"></div>
+    <div class="mesh-grid"></div>
+  </div>
+
+  <div class="app-wrapper">
+
+    <!-- ══════════ HEADER ══════════ -->
+    <header class="header" role="banner">
+      <div class="logo">
+        <div class="logo-badge">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/>
+          </svg>
+        </div>
+        <div>
+          <span class="logo-text">SkyCast</span>
+          <span class="logo-sub">Weather Intelligence</span>
+        </div>
+      </div>
+
+      <div class="header-right">
+        <div id="live-clock" class="live-clock" aria-live="polite"></div>
+        <div class="unit-toggle" role="group" aria-label="Temperature unit">
+          <button id="btn-celsius" class="unit-btn active" aria-pressed="true">°C</button>
+          <button id="btn-fahrenheit" class="unit-btn" aria-pressed="false">°F</button>
+        </div>
+      </div>
+    </header>
+
+    <!-- ══════════ SEARCH ══════════ -->
+    <section class="search-section" aria-label="Search for city weather">
+      <div class="search-container">
+        <div class="search-bar" id="search-bar">
+          <svg class="search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+          </svg>
+          <input
+            type="text"
+            id="city-input"
+            placeholder="Search for any city worldwide..."
+            autocomplete="off"
+            aria-label="City name"
+          />
+          <button id="search-btn" class="search-submit" aria-label="Search weather">
+            <span>Search</span>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
+            </svg>
+          </button>
+        </div>
+        <button id="location-btn" class="location-btn" aria-label="Use my location">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="3"/><path d="M12 2a10 10 0 0 1 10 10c0 5.52-10 12-10 12S2 17.52 2 12A10 10 0 0 1 12 2z"/>
+          </svg>
+          <span>My Location</span>
+        </button>
+      </div>
+    </section>
+
+    <!-- ══════════ ERROR ══════════ -->
+    <div id="error-msg" class="error-banner hidden" role="alert" aria-live="assertive">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+      </svg>
+      <span id="error-text">City not found. Please try again.</span>
+    </div>
+
+    <!-- ══════════ LOADING ══════════ -->
+    <div id="loading" class="loading-state hidden" aria-live="polite" aria-label="Loading weather data">
+      <div class="loading-orb">
+        <div class="loading-ring ring-1"></div>
+        <div class="loading-ring ring-2"></div>
+        <div class="loading-ring ring-3"></div>
+        <div class="loading-core">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/>
+          </svg>
+        </div>
+      </div>
+      <p class="loading-text">Fetching weather data<span class="loading-dots"><span>.</span><span>.</span><span>.</span></span></p>
+    </div>
+
+    <!-- ══════════ MAIN WEATHER CONTENT ══════════ -->
+    <main id="weather-content" class="weather-content hidden" aria-label="Weather information">
+
+      <!-- ── Hero Card ── -->
+      <div class="hero-card glass-card" id="hero-card">
+        <div class="hero-left">
+          <div class="location-row">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <circle cx="12" cy="10" r="3"/><path d="M12 21.7C17.3 17 20 13 20 10a8 8 0 1 0-16 0c0 3 2.7 6.9 8 11.7z"/>
+            </svg>
+            <h1 id="city-name">—</h1>
+            <span id="country-flag" class="country-flag"></span>
+          </div>
+          <p id="country-name" class="country-label">—</p>
+          <p id="current-date" class="date-label">—</p>
+
+          <div class="temp-display">
+            <span id="temp-main" class="temp-big">—</span>
+            <span id="temp-unit-label" class="temp-deg">°C</span>
+          </div>
+
+          <div class="condition-row">
+            <span id="weather-icon-main" class="condition-emoji" aria-hidden="true">🌤️</span>
+            <div>
+              <p id="weather-desc" class="condition-text">—</p>
+              <p id="feels-like" class="feels-text">—</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="hero-right">
+          <div class="hero-visual" aria-hidden="true">
+            <div class="weather-blob" id="weather-blob"></div>
+            <div class="weather-icon-hero" id="weather-icon-hero">🌤️</div>
+          </div>
+        </div>
+
+        <!-- Mini Stats Bar -->
+        <div class="mini-stats-bar">
+          <div class="mini-stat">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2v6m0 4v10M12 12a2 2 0 1 0 0-4 2 2 0 0 0 0 4z"/><path d="M5 12H3M21 12h-2M5.64 5.64l-1.42-1.42M19.78 4.22l-1.42 1.42M5.64 18.36l-1.42 1.42M19.78 19.78l-1.42-1.42"/></svg>
+            <span id="mini-humidity">—</span>
+          </div>
+          <div class="mini-stat-divider"></div>
+          <div class="mini-stat">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9.59 4.59A2 2 0 1 1 11 8H2m10.59 11.41A2 2 0 1 0 14 16H2m15.73-8.27A2.5 2.5 0 1 1 19.5 12H2"/></svg>
+            <span id="mini-wind">—</span>
+          </div>
+          <div class="mini-stat-divider"></div>
+          <div class="mini-stat">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="2"/><path d="M12 2a7 7 0 0 1 7 7c0 5.25-7 13-7 13S5 14.25 5 9a7 7 0 0 1 7-7z"/></svg>
+            <span id="mini-pressure">—</span>
+          </div>
+          <div class="mini-stat-divider"></div>
+          <div class="mini-stat">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            <span id="mini-visibility">—</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Detail Cards Grid ── -->
+      <div class="details-grid" aria-label="Weather details">
+
+        <!-- Humidity Card -->
+        <div class="detail-card glass-card" id="card-humidity">
+          <div class="detail-header">
+            <div class="detail-icon-wrap hue-blue">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg>
+            </div>
+            <span class="detail-label">Humidity</span>
+          </div>
+          <div class="detail-value-row">
+            <span id="humidity" class="detail-value">—</span>
+          </div>
+          <div class="progress-bar-wrap">
+            <div class="progress-bar-track">
+              <div class="progress-bar-fill" id="humidity-bar"></div>
+            </div>
+          </div>
+          <p class="detail-note" id="humidity-note">—</p>
+        </div>
+
+        <!-- Wind Card -->
+        <div class="detail-card glass-card" id="card-wind">
+          <div class="detail-header">
+            <div class="detail-icon-wrap hue-teal">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9.59 4.59A2 2 0 1 1 11 8H2m10.59 11.41A2 2 0 1 0 14 16H2m15.73-8.27A2.5 2.5 0 1 1 19.5 12H2"/></svg>
+            </div>
+            <span class="detail-label">Wind</span>
+          </div>
+          <div class="detail-value-row">
+            <span id="wind-speed" class="detail-value">—</span>
+          </div>
+          <!-- Wind compass -->
+          <div class="compass-wrap">
+            <div class="compass-ring">
+              <span class="compass-n">N</span>
+              <span class="compass-e">E</span>
+              <span class="compass-s">S</span>
+              <span class="compass-w">W</span>
+              <div class="compass-needle" id="compass-needle"></div>
+            </div>
+          </div>
+          <p class="detail-note" id="wind-dir-note">Direction: —</p>
+        </div>
+
+        <!-- UV Index Card -->
+        <div class="detail-card glass-card" id="card-uv">
+          <div class="detail-header">
+            <div class="detail-icon-wrap hue-amber">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+            </div>
+            <span class="detail-label">UV Index</span>
+          </div>
+          <div class="detail-value-row">
+            <span id="uv-index" class="detail-value">—</span>
+          </div>
+          <div class="uv-arc-wrap">
+            <svg class="uv-arc" viewBox="0 0 120 70" aria-hidden="true">
+              <defs>
+                <linearGradient id="uv-grad" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stop-color="#22d3ee"/>
+                  <stop offset="33%" stop-color="#86efac"/>
+                  <stop offset="55%" stop-color="#fde047"/>
+                  <stop offset="77%" stop-color="#fb923c"/>
+                  <stop offset="100%" stop-color="#dc2626"/>
+                </linearGradient>
+              </defs>
+              <path d="M10 65 A 50 50 0 0 1 110 65" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="8" stroke-linecap="round"/>
+              <path d="M10 65 A 50 50 0 0 1 110 65" fill="none" stroke="url(#uv-grad)" stroke-width="8" stroke-linecap="round" stroke-dasharray="157" stroke-dashoffset="157" id="uv-arc-path"/>
+              <circle id="uv-dot" cx="10" cy="65" r="5" fill="#fff" stroke="rgba(0,0,0,0.3)" stroke-width="1.5"/>
+            </svg>
+          </div>
+          <p class="detail-note" id="uv-note">—</p>
+        </div>
+
+        <!-- Visibility Card -->
+        <div class="detail-card glass-card" id="card-visibility">
+          <div class="detail-header">
+            <div class="detail-icon-wrap hue-purple">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            </div>
+            <span class="detail-label">Visibility</span>
+          </div>
+          <div class="detail-value-row">
+            <span id="visibility" class="detail-value">—</span>
+          </div>
+          <div class="visibility-bars" id="visibility-bars" aria-hidden="true">
+            <div class="vis-bar"></div><div class="vis-bar"></div><div class="vis-bar"></div>
+            <div class="vis-bar"></div><div class="vis-bar"></div>
+          </div>
+          <p class="detail-note" id="visibility-note">—</p>
+        </div>
+
+        <!-- Dew Point Card -->
+        <div class="detail-card glass-card" id="card-dew">
+          <div class="detail-header">
+            <div class="detail-icon-wrap hue-cyan">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 14.76V3.5a2.5 2.5 0 0 0-5 0v11.26a4.5 4.5 0 1 0 5 0z"/></svg>
+            </div>
+            <span class="detail-label">Dew Point</span>
+          </div>
+          <div class="detail-value-row">
+            <span id="dew-point" class="detail-value">—</span>
+          </div>
+          <div class="thermo-wrap" aria-hidden="true">
+            <div class="thermo-tube">
+              <div class="thermo-fill" id="thermo-fill"></div>
+              <div class="thermo-bulb"></div>
+            </div>
+          </div>
+          <p class="detail-note" id="dew-note">—</p>
+        </div>
+
+        <!-- Sunrise/Sunset Card -->
+        <div class="detail-card glass-card" id="card-sun">
+          <div class="detail-header">
+            <div class="detail-icon-wrap hue-orange">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 18a5 5 0 0 0-10 0"/><line x1="12" y1="2" x2="12" y2="9"/><line x1="4.22" y1="10.22" x2="5.64" y2="11.64"/><line x1="1" y1="18" x2="3" y2="18"/><line x1="21" y1="18" x2="23" y2="18"/><line x1="18.36" y1="11.64" x2="19.78" y2="10.22"/></svg>
+            </div>
+            <span class="detail-label">Sunrise / Sunset</span>
+          </div>
+          <div class="sun-times">
+            <div class="sun-time-item">
+              <span class="sun-time-icon">🌅</span>
+              <div>
+                <p class="sun-time-label">Sunrise</p>
+                <p id="sunrise-time" class="sun-time-value">—</p>
+              </div>
+            </div>
+            <div class="sun-divider"></div>
+            <div class="sun-time-item">
+              <span class="sun-time-icon">🌇</span>
+              <div>
+                <p class="sun-time-label">Sunset</p>
+                <p id="sunset-time" class="sun-time-value">—</p>
+              </div>
+            </div>
+          </div>
+          <div class="sun-arc-wrap" aria-hidden="true">
+            <svg class="sun-arc-svg" viewBox="0 0 140 80">
+              <path d="M10 75 A 60 60 0 0 1 130 75" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="3" stroke-dasharray="4 4"/>
+              <circle id="sun-pos-dot" cx="10" cy="75" r="7" fill="#fbbf24" filter="url(#sun-glow)"/>
+              <defs>
+                <filter id="sun-glow" x="-50%" y="-50%" width="200%" height="200%">
+                  <feGaussianBlur stdDeviation="3" result="blur"/>
+                  <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+                </filter>
+              </defs>
+            </svg>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- ── 5-Day Forecast ── -->
+      <section class="forecast-section" aria-label="5-day weather forecast">
+        <div class="section-header">
+          <h2 class="section-title">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            5-Day Forecast
+          </h2>
+        </div>
+        <div id="forecast-cards" class="forecast-strip" role="list" aria-label="Daily forecast cards">
+          <!-- Inserted by JS -->
+        </div>
+      </section>
+
+    </main>
+
+    <!-- ══════════ WELCOME STATE ══════════ -->
+    <div id="welcome-state" class="welcome-state" aria-label="Welcome screen">
+      <div class="welcome-globe" aria-hidden="true">
+        <div class="globe-ring globe-ring-1"></div>
+        <div class="globe-ring globe-ring-2"></div>
+        <div class="globe-ring globe-ring-3"></div>
+        <div class="globe-icon">🌍</div>
+      </div>
+      <h2 class="welcome-heading">Discover the Weather</h2>
+      <p class="welcome-sub">Search for any city around the world to get real‑time weather data, hourly and 5‑day forecasts, UV index, air quality and more.</p>
+      <div class="popular-cities" aria-label="Popular cities quick search">
+        <p class="popular-label">Popular Cities</p>
+        <div class="city-chips">
+          <button class="city-chip" data-city="Istanbul" aria-label="Search Istanbul">🇹🇷 Istanbul</button>
+          <button class="city-chip" data-city="London" aria-label="Search London">🇬🇧 London</button>
+          <button class="city-chip" data-city="New York" aria-label="Search New York">🇺🇸 New York</button>
+          <button class="city-chip" data-city="Tokyo" aria-label="Search Tokyo">🇯🇵 Tokyo</button>
+          <button class="city-chip" data-city="Dubai" aria-label="Search Dubai">🇦🇪 Dubai</button>
+          <button class="city-chip" data-city="Paris" aria-label="Search Paris">🇫🇷 Paris</button>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /.app-wrapper -->
+
+  <footer class="app-footer" role="contentinfo">
+    <p>Powered by <strong>Google Weather API</strong> · Built with ❤️ for <strong>Bulut Bilişim</strong> course</p>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
