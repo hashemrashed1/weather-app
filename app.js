@@ -14,6 +14,7 @@ let state = {
   countryLabel: ''
 };
 
+
 /* ── DOM Refs ── */
 const cityInput      = document.getElementById('city-input');
 const searchBtn      = document.getElementById('search-btn');
